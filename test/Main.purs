@@ -16,12 +16,13 @@ import Test.Unit (failure, suite, test)
 import Test.Unit.Assert (assert)
 import Test.Unit.Assert as Assert
 import Test.Unit.Main (runTest)
+import Unsafe.Coerce (unsafeCoerce)
 
-testResponse url options expected = do
-  response
-      <- Milkis.text
-    =<< Milkis.fetch url options
-  Assert.equal response expected
+testResponse url options status expected = do
+  response <- Milkis.fetch url options
+  text <- Milkis.text response
+  Assert.equal (unsafeCoerce response).status status
+  Assert.equal text expected
 
 main :: _
 main = runTest do
@@ -35,7 +36,10 @@ main = runTest do
         M.use (M.Path "/") json app
         M.get
           (M.Path "/get-test")
-          (M.makeHandler (\_ res -> M.sendResponse "GET OK" res))
+          (M.makeHandler
+            (\req res -> do
+                M.setHeader "Content-Type" "text/html" res
+                M.sendResponse "GET OK" res))
           app
         M.post
           (M.Path "/post-test")
@@ -45,6 +49,13 @@ main = runTest do
                 writeRef ref $ pure $ runExcept body
                 M.sendResponse "POST OK" res))
           app
+        M.get
+          (M.Path "/400")
+          (M.makeHandler
+            (\req res -> do
+               M.setStatus 400 res
+               M.sendResponse "ASDF" res))
+          app
         pure server
 
       testResponse
@@ -53,8 +64,9 @@ main = runTest do
         , body: """{ "a" : "apple" }"""
         , headers: Milkis.makeHeaders { "Content-Type": "application/json" }
         }
-        "POST OK"
-      testResponse (Milkis.URL "http://localhost:9999/get-test") { method: Milkis.getMethod } "GET OK"
+        200 "POST OK"
+      testResponse (Milkis.URL "http://localhost:9999/get-test") { method: Milkis.getMethod } 200 "GET OK"
+      testResponse (Milkis.URL "http://localhost:9999/400") { method: Milkis.getMethod } 400 "ASDF"
 
       value <- liftEff $ readRef ref
       case value of

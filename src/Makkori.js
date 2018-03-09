@@ -32,6 +32,14 @@ exports._sendResponse = function(body, response) {
   return response.send(body);
 };
 
+exports._set = function(field, value, response) {
+  return response.set(field, value);
+};
+
+exports._setStatus = function(status, response) {
+  return response.status(status);
+};
+
 exports._getBody = function(request) {
   return request.body;
 };

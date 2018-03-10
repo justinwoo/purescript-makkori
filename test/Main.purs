@@ -4,6 +4,7 @@ import Prelude
 
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Ref (newRef, readRef, writeRef)
+import Control.Monad.Eff.Uncurried as EU
 import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
 import Data.Foreign (readString)
@@ -18,6 +19,8 @@ import Test.Unit.Assert as Assert
 import Test.Unit.Main (runTest)
 import Unsafe.Coerce (unsafeCoerce)
 
+foreign import ffiGet :: forall e. EU.EffFn3 e M.Path (M.Handler e) M.App Unit
+
 testResponse url options status expected = do
   response <- Milkis.fetch url options
   text <- Milkis.text response
@@ -31,10 +34,10 @@ main = runTest do
       ref <- liftEff $ newRef mempty
       server <- liftEff do
         app <- M.makeApp
-        server <- M.listen (M.Port 9999) mempty app
         json <- M.makeJSONMiddleware {}
         M.use (M.Path "/") json app
-        M.get
+        EU.runEffFn3
+          ffiGet
           (M.Path "/get-test")
           (M.makeHandler
             (\req res -> do
@@ -56,7 +59,7 @@ main = runTest do
                M.setStatus 400 res
                M.sendResponse "ASDF" res))
           app
-        pure server
+        M.listen (M.Port 9999) mempty app
 
       testResponse
         (Milkis.URL "http://localhost:9999/post-test")

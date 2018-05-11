@@ -12,13 +12,13 @@
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "^3.1.1",
-    "purescript-record": "^0.2.6",
-    "purescript-functions": "^3.0.0",
-    "purescript-node-http": "^4.2.0"
+    "purescript-prelude": "#compiler/0.12",
+    "purescript-record": "#compiler/0.12",
+    "purescript-functions": "#compiler/0.12",
+    "purescript-node-http": "justinwoo/purescript-node-http#compiler/0.12"
   },
   "devDependencies": {
-    "purescript-milkis": "^3.0.0",
-    "purescript-test-unit": "^13.0.0"
+    "purescript-milkis": "#compiler/0.12",
+    "purescript-test-unit": "justinwoo/purescript-test-unit#compiler/0.12"
   }
 }

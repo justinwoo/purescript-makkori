@@ -2,11 +2,12 @@ module Makkori where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Uncurried as EU
-import Data.Foreign (Foreign)
 import Data.Newtype (class Newtype)
+import Effect (Effect)
+import Effect.Uncurried as EU
+import Foreign (Foreign)
 import Node.HTTP (Server)
+import Prim.Row as Row
 import Unsafe.Coerce (unsafeCoerce)
 
 foreign import data App :: Type
@@ -15,10 +16,10 @@ foreign import data Middleware :: Type
 foreign import data Request :: Type
 foreign import data Response :: Type
 
-type Handler e = EU.EffFn2 e Request Response Unit
+type Handler = EU.EffectFn2 Request Response Unit
 
-makeHandler :: forall e. (Request -> Response -> Eff e Unit) -> Handler e
-makeHandler = EU.mkEffFn2
+makeHandler :: (Request -> Response -> Effect Unit) -> Handler
+makeHandler = EU.mkEffectFn2
 
 newtype Path = Path String
 derive instance newtypePath :: Newtype Path _
@@ -26,7 +27,7 @@ derive instance newtypePath :: Newtype Path _
 newtype Port = Port Int
 derive instance newtypePort :: Newtype Port _
 
-makeApp :: forall e. Eff e App
+makeApp :: Effect App
 makeApp = _makeApp
 
 foreign import data Method :: Type
@@ -43,19 +44,19 @@ postMethod = unsafeCoerce "post"
 deleteMethod :: Method
 deleteMethod = unsafeCoerce "delete"
 
-registerMethod :: forall e. Method -> Path -> Handler e -> App -> Eff e Unit
-registerMethod = EU.runEffFn4 _registerMethod
+registerMethod :: Method -> Path -> Handler -> App -> Effect Unit
+registerMethod = EU.runEffectFn4 _registerMethod
 
-get :: forall e. Path -> Handler e -> App -> Eff e Unit
+get :: Path -> Handler -> App -> Effect Unit
 get = registerMethod getMethod
 
-post :: forall e. Path -> Handler e -> App -> Eff e Unit
+post :: Path -> Handler -> App -> Effect Unit
 post = registerMethod postMethod
 
-put :: forall e. Path -> Handler e -> App -> Eff e Unit
+put :: Path -> Handler -> App -> Effect Unit
 put = registerMethod putMethod
 
-delete :: forall e. Path -> Handler e -> App -> Eff e Unit
+delete :: Path -> Handler -> App -> Effect Unit
 delete = registerMethod deleteMethod
 
 type StaticOptions =
@@ -63,53 +64,53 @@ type StaticOptions =
   )
 
 makeStaticMiddleware
-  :: forall options trash e
-   . Union options trash StaticOptions
+  :: forall options trash
+   . Row.Union options trash StaticOptions
   => Path
   -> Record options
-  -> Eff e Middleware
-makeStaticMiddleware = EU.runEffFn2 _makeStaticMiddleware
+  -> Effect Middleware
+makeStaticMiddleware = EU.runEffectFn2 _makeStaticMiddleware
 
 type JSONOptions =
   (
   )
 
 makeJSONMiddleware
-  :: forall options trash e
-   . Union options trash JSONOptions
+  :: forall options trash
+   . Row.Union options trash JSONOptions
   => Record options
-  -> Eff e Middleware
-makeJSONMiddleware = EU.runEffFn1 _makeJSONMiddleware
+  -> Effect Middleware
+makeJSONMiddleware = EU.runEffectFn1 _makeJSONMiddleware
 
-use :: forall e. Path -> Middleware -> App -> Eff e Unit
-use = EU.runEffFn3 _use
+use :: Path -> Middleware -> App -> Effect Unit
+use = EU.runEffectFn3 _use
 
-listen :: forall e. Port -> Eff e Unit -> App -> Eff e Server
-listen = EU.runEffFn3 _listen
+listen :: Port -> Effect Unit -> App -> Effect Server
+listen = EU.runEffectFn3 _listen
 
-close :: forall e. Eff e Unit -> Server -> Eff e Unit
-close = EU.runEffFn2 _close
+close :: Effect Unit -> Server -> Effect Unit
+close = EU.runEffectFn2 _close
 
-sendResponse :: forall e. String -> Response -> Eff e Unit
-sendResponse = EU.runEffFn2 _sendResponse
+sendResponse :: String -> Response -> Effect Unit
+sendResponse = EU.runEffectFn2 _sendResponse
 
-setHeader :: forall e. String -> String -> Response -> Eff e Unit
-setHeader = EU.runEffFn3 _set
+setHeader :: String -> String -> Response -> Effect Unit
+setHeader = EU.runEffectFn3 _set
 
-setStatus :: forall e. Int -> Response -> Eff e Unit
-setStatus = EU.runEffFn2 _setStatus
+setStatus :: Int -> Response -> Effect Unit
+setStatus = EU.runEffectFn2 _setStatus
 
-getBody :: forall e. Request -> Eff e Foreign
-getBody = EU.runEffFn1 _getBody
+getBody :: Request -> Effect Foreign
+getBody = EU.runEffectFn1 _getBody
 
-foreign import _makeApp :: forall e. Eff e App
-foreign import _registerMethod :: forall e. EU.EffFn4 e Method Path (Handler e) App Unit
-foreign import _makeStaticMiddleware :: forall e options. EU.EffFn2 e Path options Middleware
-foreign import _makeJSONMiddleware :: forall e options. EU.EffFn1 e options Middleware
-foreign import _use :: forall e. EU.EffFn3 e Path Middleware App Unit
-foreign import _listen :: forall e. EU.EffFn3 e Port (Eff e Unit) App Server
-foreign import _close :: forall e. EU.EffFn2 e (Eff e Unit) Server Unit
-foreign import _sendResponse :: forall e. EU.EffFn2 e String Response Unit
-foreign import _set :: forall e. EU.EffFn3 e String String Response Unit
-foreign import _setStatus :: forall e. EU.EffFn2 e Int Response Unit
-foreign import _getBody :: forall e. EU.EffFn1 e Request Foreign
+foreign import _makeApp :: Effect App
+foreign import _registerMethod :: EU.EffectFn4 Method Path Handler App Unit
+foreign import _makeStaticMiddleware :: forall options. EU.EffectFn2 Path options Middleware
+foreign import _makeJSONMiddleware :: forall options. EU.EffectFn1 options Middleware
+foreign import _use :: EU.EffectFn3 Path Middleware App Unit
+foreign import _listen :: EU.EffectFn3 Port (Effect Unit) App Server
+foreign import _close :: EU.EffectFn2 (Effect Unit) Server Unit
+foreign import _sendResponse :: EU.EffectFn2 String Response Unit
+foreign import _set :: EU.EffectFn3 String String Response Unit
+foreign import _setStatus :: EU.EffectFn2 Int Response Unit
+foreign import _getBody :: EU.EffectFn1 Request Foreign

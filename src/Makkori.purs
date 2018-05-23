@@ -103,6 +103,9 @@ setStatus = EU.runEffectFn2 _setStatus
 getBody :: Request -> Effect Foreign
 getBody = EU.runEffectFn1 _getBody
 
+getParams :: Request -> Effect Foreign
+getParams = EU.runEffectFn1 _getParams
+
 foreign import _makeApp :: Effect App
 foreign import _registerMethod :: EU.EffectFn4 Method Path Handler App Unit
 foreign import _makeStaticMiddleware :: forall options. EU.EffectFn2 Path options Middleware

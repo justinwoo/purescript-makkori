@@ -43,3 +43,7 @@ exports._setStatus = function(status, response) {
 exports._getBody = function(request) {
   return request.body;
 };
+
+exports._getParams = function(request) {
+  return request.params;
+};

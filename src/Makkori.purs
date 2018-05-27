@@ -117,3 +117,4 @@ foreign import _sendResponse :: EU.EffectFn2 String Response Unit
 foreign import _set :: EU.EffectFn3 String String Response Unit
 foreign import _setStatus :: EU.EffectFn2 Int Response Unit
 foreign import _getBody :: EU.EffectFn1 Request Foreign
+foreign import _getParams :: EU.EffectFn1 Request Foreign
